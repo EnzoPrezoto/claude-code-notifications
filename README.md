@@ -35,20 +35,35 @@ Add the following to your `~/.claude/settings.json` (update the path to where yo
   "hooks": {
     "Stop": [
       {
-        "matcher": "",
-        "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event stop"
+        "matcher": {},
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event stop"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "",
-        "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event post_tool_use"
+        "matcher": {},
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event post_tool_use"
+          }
+        ]
       }
     ],
     "Notification": [
       {
-        "matcher": "",
-        "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event notification"
+        "matcher": {},
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"C:/path/to/claude-code-notifications/claude-notify.ps1\" -Event notification"
+          }
+        ]
       }
     ]
   }
