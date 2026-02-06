@@ -13,7 +13,7 @@ Uses Claude Code's **hooks system** to automatically trigger Windows toast notif
 | Event | When it fires | Notification |
 |-------|--------------|--------------|
 | **Stop** | Claude finishes and waits for your input | "Ready for your input" |
-| **PostToolUse** | A tool errors or exits non-zero | Shows error details |
+| **PostToolUseFailure** | A tool call fails or errors | Shows error details |
 | **Notification** | Claude sends a status update | Shows the message |
 
 No polling. No background processes. Just hooks.
@@ -35,7 +35,6 @@ Add the following to your `~/.claude/settings.json` (update the path to where yo
   "hooks": {
     "Stop": [
       {
-        "matcher": {},
         "hooks": [
           {
             "type": "command",
@@ -44,9 +43,9 @@ Add the following to your `~/.claude/settings.json` (update the path to where yo
         ]
       }
     ],
-    "PostToolUse": [
+    "PostToolUseFailure": [
       {
-        "matcher": {},
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -57,7 +56,7 @@ Add the following to your `~/.claude/settings.json` (update the path to where yo
     ],
     "Notification": [
       {
-        "matcher": {},
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -102,10 +101,10 @@ You should see a Windows toast notification with sound.
 
 ## How it works
 
-1. Claude Code fires a **hook event** (Stop, PostToolUse, or Notification)
+1. Claude Code fires a **hook event** (Stop, PostToolUseFailure, or Notification)
 2. The hook runs `claude-notify.ps1` with the event type
 3. The script reads event context from stdin (JSON piped by Claude Code)
-4. For `post_tool_use`, it only notifies if there's an actual error (no spam)
+4. For `PostToolUseFailure`, it only fires when a tool actually fails (no spam on success)
 5. Sends a **Windows toast notification** via the WinRT API
 6. Falls back to a **balloon tip** if toast fails
 
