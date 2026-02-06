@@ -104,39 +104,6 @@ switch ($Event) {
     }
 }
 
-# --- Image selection by type ---
-function Get-NotificationImage {
-    param([string]$NType)
-
-    $successImages = @(
-        "https://media.giphy.com/media/3o6Zt6KHxJTbXCnSvu/giphy.gif",
-        "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-        "https://media.giphy.com/media/3o7qDSOvfaCO9b3MlO/giphy.gif",
-        "https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif"
-    )
-
-    $errorImages = @(
-        "https://media.giphy.com/media/26ufcVAp3AgvurBss/giphy.gif",
-        "https://media.giphy.com/media/3o7TKz6PPHsNIOWqQ0/giphy.gif",
-        "https://media.giphy.com/media/3o6ZsUJ44ffpnAW7Dy/giphy.gif",
-        "https://media.giphy.com/media/l1J9EdzfOSgfyueLm/giphy.gif"
-    )
-
-    $warningImages = @(
-        "https://media.giphy.com/media/3o7TKMt1VVNkHV4hKo/giphy.gif",
-        "https://media.giphy.com/media/3o6Ztl7oraKm4Ckhhu/giphy.gif",
-        "https://media.giphy.com/media/3o6ZsYq5cchOBmhFFC/giphy.gif",
-        "https://media.giphy.com/media/l2Sq2K3usXkToPgTC/giphy.gif"
-    )
-
-    switch ($NType) {
-        "success" { return $successImages[(Get-Random -Maximum $successImages.Length)] }
-        "error"   { return $errorImages[(Get-Random -Maximum $errorImages.Length)] }
-        "warning" { return $warningImages[(Get-Random -Maximum $warningImages.Length)] }
-        default   { return $successImages[(Get-Random -Maximum $successImages.Length)] }
-    }
-}
-
 # --- Send Toast Notification (Windows 10+) ---
 function Send-ToastNotification {
     param([string]$NTitle, [string]$NMessage, [string]$NType)
@@ -148,15 +115,12 @@ function Send-ToastNotification {
         $safeTitle = [System.Security.SecurityElement]::Escape($NTitle)
         $safeMsg = [System.Security.SecurityElement]::Escape($NMessage)
 
-        $imageUrl = Get-NotificationImage -NType $NType
-
         $toastXml = @"
 <toast duration="short">
     <visual>
         <binding template="ToastGeneric">
             <text>$safeTitle</text>
             <text>$safeMsg</text>
-            <image placement="hero" src="$imageUrl"/>
         </binding>
     </visual>
     <audio src="ms-winsoundevent:Notification.Default"/>
