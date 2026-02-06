@@ -23,11 +23,47 @@ if ($Event -ne "direct") {
     } catch {}
 }
 
+# --- Sarcastic messages by type ---
+$successMessages = @(
+    "Pronto! Agora e com voce, eu ja fiz minha parte.",
+    "Terminei aqui. Sua vez de trabalhar!",
+    "Feito! Agora para de me interromper e vai la fazer algo util.",
+    "Missao cumprida. Voce vai olhar ou vai usar isso?",
+    "Acabei. Agora e so voce nao estragar tudo.",
+    "Ta pronto. Nao venha reclamar depois que 'nao ta do jeito que queria'.",
+    "Finalizado! Espero que voce saiba o que pediu...",
+    "Pronto, chefe. Agora sou eu quem vai esperar por VOCE."
+)
+
+$errorMessages = @(
+    "Deu ruim. Mas calma, provavelmente foi culpa sua.",
+    "Travei aqui. Eu so queria trabalhar em paz...",
+    "Erro! Sera que voce digitou algo errado DE NOVO?",
+    "Falhou. Nao me olhe assim, eu so executo o que voce manda.",
+    "Algo deu errado. Spoiler: nao fui eu.",
+    "Crashei. Parabens, voce conseguiu me quebrar.",
+    "Erro detectado. Revise seu codigo... ou sua vida.",
+    "Bugou. Talvez seja hora de um cafezinho e repensar suas escolhas."
+)
+
+$warningMessages = @(
+    "Aviso: isso aqui ta meio estranho, so avisando.",
+    "Cuidado! Nao sei se isso e o que voce realmente quer.",
+    "Alerta: continua assim e vai dar problema, to avisando.",
+    "Atencao! Isso pode nao acabar bem...",
+    "Warning! Mas enfim, voce que sabe ne.",
+    "Opa! Alguma coisa aqui nao cheira bem.",
+    "Eita! Isso ai ta com cara de dar problema.",
+    "Hmm... Voce tem certeza do que ta fazendo?"
+)
+
 # --- Determine notification content based on event type ---
 switch ($Event) {
     "stop" {
         $Title = "Claude Code"
-        if (-not $Message) { $Message = "Ready for your input" }
+        if (-not $Message) {
+            $Message = $successMessages[(Get-Random -Maximum $successMessages.Length)]
+        }
         $Type = "success"
     }
     "post_tool_use" {
@@ -39,17 +75,19 @@ switch ($Event) {
                 $toolName = if ($hookData.tool_name) { $hookData.tool_name } else { "Tool" }
                 $errText = if ($hookData.error -is [string]) { $hookData.error } else { ($hookData.error | Out-String).Trim() }
                 if ($errText.Length -gt 200) { $errText = $errText.Substring(0, 200) + "..." }
-                $Message = "$toolName error: $errText"
+                $snarkyMsg = $errorMessages[(Get-Random -Maximum $errorMessages.Length)]
+                $Message = "$snarkyMsg`n`nDetalhes: $toolName - $errText"
                 $Type = "error"
-                $Title = "Claude Code - Error"
+                $Title = "Claude Code - Erro"
             }
             # Also check for non-zero exit codes in Bash results
             if ($hookData.tool_result -and $hookData.tool_result.exit_code -and $hookData.tool_result.exit_code -ne 0) {
                 $hasError = $true
                 $toolName = if ($hookData.tool_name) { $hookData.tool_name } else { "Tool" }
-                $Message = "$toolName exited with code $($hookData.tool_result.exit_code)"
+                $snarkyMsg = $warningMessages[(Get-Random -Maximum $warningMessages.Length)]
+                $Message = "$snarkyMsg`n`n$toolName saiu com codigo $($hookData.tool_result.exit_code)"
                 $Type = "warning"
-                $Title = "Claude Code - Warning"
+                $Title = "Claude Code - Aviso"
             }
         }
         if (-not $hasError) { exit 0 }
@@ -66,9 +104,42 @@ switch ($Event) {
     }
 }
 
+# --- Image selection by type ---
+function Get-NotificationImage {
+    param([string]$NType)
+
+    $successImages = @(
+        "https://media.giphy.com/media/3o6Zt6KHxJTbXCnSvu/giphy.gif",
+        "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+        "https://media.giphy.com/media/3o7qDSOvfaCO9b3MlO/giphy.gif",
+        "https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif"
+    )
+
+    $errorImages = @(
+        "https://media.giphy.com/media/26ufcVAp3AgvurBss/giphy.gif",
+        "https://media.giphy.com/media/3o7TKz6PPHsNIOWqQ0/giphy.gif",
+        "https://media.giphy.com/media/3o6ZsUJ44ffpnAW7Dy/giphy.gif",
+        "https://media.giphy.com/media/l1J9EdzfOSgfyueLm/giphy.gif"
+    )
+
+    $warningImages = @(
+        "https://media.giphy.com/media/3o7TKMt1VVNkHV4hKo/giphy.gif",
+        "https://media.giphy.com/media/3o6Ztl7oraKm4Ckhhu/giphy.gif",
+        "https://media.giphy.com/media/3o6ZsYq5cchOBmhFFC/giphy.gif",
+        "https://media.giphy.com/media/l2Sq2K3usXkToPgTC/giphy.gif"
+    )
+
+    switch ($NType) {
+        "success" { return $successImages[(Get-Random -Maximum $successImages.Length)] }
+        "error"   { return $errorImages[(Get-Random -Maximum $errorImages.Length)] }
+        "warning" { return $warningImages[(Get-Random -Maximum $warningImages.Length)] }
+        default   { return $successImages[(Get-Random -Maximum $successImages.Length)] }
+    }
+}
+
 # --- Send Toast Notification (Windows 10+) ---
 function Send-ToastNotification {
-    param([string]$NTitle, [string]$NMessage)
+    param([string]$NTitle, [string]$NMessage, [string]$NType)
 
     try {
         [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
@@ -77,12 +148,15 @@ function Send-ToastNotification {
         $safeTitle = [System.Security.SecurityElement]::Escape($NTitle)
         $safeMsg = [System.Security.SecurityElement]::Escape($NMessage)
 
+        $imageUrl = Get-NotificationImage -NType $NType
+
         $toastXml = @"
 <toast duration="short">
     <visual>
         <binding template="ToastGeneric">
             <text>$safeTitle</text>
             <text>$safeMsg</text>
+            <image placement="hero" src="$imageUrl"/>
         </binding>
     </visual>
     <audio src="ms-winsoundevent:Notification.Default"/>
@@ -132,7 +206,7 @@ function Send-BalloonNotification {
 }
 
 # --- Send notification: try toast first, fallback to balloon ---
-$sent = Send-ToastNotification -NTitle $Title -NMessage $Message
+$sent = Send-ToastNotification -NTitle $Title -NMessage $Message -NType $Type
 if (-not $sent) {
     Send-BalloonNotification -NTitle $Title -NMessage $Message -NType $Type | Out-Null
 }
